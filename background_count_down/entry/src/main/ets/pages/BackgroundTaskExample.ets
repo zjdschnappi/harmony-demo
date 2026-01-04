@@ -1,0 +1,84 @@
+import backgroundTaskManager from '@ohos.resourceschedule.backgroundTaskManager';
+import { BusinessError } from '@kit.BasicServicesKit'
+@Entry
+@Component
+struct BackgroundTaskExample {
+  @State intervalN:number = 0;
+  private timer: number = 0;
+  private total:number = 60;
+  private delayInfo?:backgroundTaskManager.DelaySuspendInfo
+
+  handleStart(){
+    let reason = 'test';
+    try {
+      if(this.delayInfo){
+        backgroundTaskManager.cancelSuspendDelay(this.delayInfo.requestId)
+      }
+      this.delayInfo = backgroundTaskManager.requestSuspendDelay(reason,()=>{
+        console.info('Request suspension delay will time out')
+      })
+      let id = this.delayInfo.requestId;
+      let time = this.delayInfo.actualDelayTime;
+      console.info(`The requestId is ${id}`)
+      console.info(`The actualDelayTime is ${time}`)
+      clearInterval(this.timer)
+      this.timer = setInterval(()=>{
+        if(this.intervalN === this.total){
+          clearInterval(this.timer)
+          this.intervalN = 0
+        }else {
+          this.intervalN++
+        }
+      },1000)
+    }catch (error) {
+      console.error(`requestSuspendDelay failed,code is ${(error as BusinessError).code},message is ${(error as BusinessError).message}`)
+    }
+  }
+  handlePause(){
+    clearInterval(this.timer)
+  }
+  handleReset(){
+    clearInterval(this.timer)
+    this.intervalN = 0
+  }
+
+  build() {
+    RelativeContainer(){
+      Column() {
+        Text(`${this.intervalN===0?'00':(this.total - this.intervalN)}`.padStart(2,'0'))
+          .fontColor(Color.Black)
+          .fontSize(50)
+        Column({ space: 16 }){
+          Button('start')
+            .width('100%')
+            .onClick(()=>{
+              this.handleStart()
+            })
+          Button('stop')
+            .width('100%')
+            .onClick(()=>{
+              this.handlePause()
+            })
+          Button('reset')
+            .width('100%')
+            .onClick(()=>{
+              this.handleReset()
+            })
+        }
+      }
+      .alignRules({
+        middle: {
+          anchor: '__container__',
+          align: HorizontalAlign.Center
+        },
+        center: {
+          anchor: '__container',
+          align: VerticalAlign.Center
+        }
+      })
+
+    }
+    .height('100%')
+    .width('100%')
+  }
+}
